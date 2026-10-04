@@ -12,6 +12,14 @@
   ],
   "license": "MIT",
   "author": "Amirhosein Hemmatlou",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amirhoseinhematloo/claude-moodline.git"
+  },
+  "homepage": "https://github.com/amirhoseinhematloo/claude-moodline#readme",
+  "bugs": {
+    "url": "https://github.com/amirhoseinhematloo/claude-moodline/issues"
+  },
   "bin": {
     "claude-moodline": "bin/claude-moodline.js"
   },
