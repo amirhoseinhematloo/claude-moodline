@@ -1,0 +1,31 @@
+{
+  "name": "claude-moodline",
+  "version": "1.0.0",
+  "description": "A Claude Code status line with model, effort, context and 5h/7d usage bars, each with a mood face.",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "statusline",
+    "status-line",
+    "cli",
+    "anthropic"
+  ],
+  "license": "MIT",
+  "author": "Amirhosein Hemmatlou",
+  "bin": {
+    "claude-moodline": "bin/claude-moodline.js"
+  },
+  "main": "src/render.js",
+  "files": [
+    "bin",
+    "src"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test",
+    "preview": "node bin/claude-moodline.js preview",
+    "prepublishOnly": "npm test"
+  }
+}
