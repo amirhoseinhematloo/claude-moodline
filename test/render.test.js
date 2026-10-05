@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { render, formatDuration, moodIndex } = require('../src/render.js');
+const { render, formatDuration, moodIndex, visibleWidth } = require('../src/render.js');
 
 const NOW = 1_700_000_000_000;
 const nowSec = NOW / 1000;
@@ -27,6 +27,51 @@ test('renders both lines with every field present', () => {
 test('falls back gracefully on empty or invalid input', () => {
   assert.equal(plain({}), '🤖 Claude\n😊 usage: waiting for first reply');
   assert.equal(plain(null), '🤖 Claude\n😊 usage: waiting for first reply');
+});
+
+test('shows the git branch after model and effort', () => {
+  assert.equal(plain(full, { branch: 'main' }).split('\n')[0], '🤖 Opus 🏃 high  |  🌿 main  |  🧠 ctx ███░░░░░ 42% 🙂');
+  assert.match(plain(full, { branch: 'main', ascii: true }), /^Opus high {2}\| {2}main {2}\| {2}ctx /);
+  assert.match(render(full, { now: NOW, branch: 'main' }), /\x1b\[34mmain\x1b\[0m/);
+});
+
+test('visibleWidth ignores ANSI codes and counts emoji as two columns', () => {
+  assert.equal(visibleWidth('\x1b[36mOpus\x1b[0m'), 4);
+  assert.equal(visibleWidth('🤖 ✨ 😱'), 8);
+  assert.equal(visibleWidth('⏱️'), 2);
+  assert.equal(visibleWidth('███░↻'), 5);
+  assert.equal(visibleWidth('功能'), 4);
+});
+
+test('wraps segments onto extra lines when they do not fit the width', () => {
+  const opts = { branch: 'main' };
+  // Widest lines are 54 and 64 columns.
+  assert.equal(plain(full, { ...opts, width: 64 }), plain(full, opts));
+  assert.deepEqual(plain(full, { ...opts, width: 63 }).split('\n'), [
+    '🤖 Opus 🏃 high  |  🌿 main  |  🧠 ctx ███░░░░░ 42% 🙂',
+    '⏱️ 5h ███████░░░ 73% 😅 ↻2h15m',
+    '📅 7d ██████████ 95% 😱 ↻4d6h',
+  ]);
+  assert.deepEqual(plain(full, { ...opts, width: 53 }).split('\n').slice(0, 2), [
+    '🤖 Opus 🏃 high  |  🌿 main',
+    '🧠 ctx ███░░░░░ 42% 🙂',
+  ]);
+});
+
+test('a segment wider than the terminal gets its own line, not split', () => {
+  const lines = plain(full, { branch: 'main', width: 10 }).split('\n');
+  assert.equal(lines.length, 5);
+  assert.ok(lines.every((l) => !l.includes('|')));
+});
+
+test('noBar hides the bar per item but keeps percentage, face and reset', () => {
+  const [line1, line2] = plain(full, { noBar: ['ctx', '7d'] }).split('\n');
+  assert.equal(line1, '🤖 Opus 🏃 high  |  🧠 ctx 42% 🙂');
+  assert.equal(line2, '⏱️ 5h ███████░░░ 73% 😅 ↻2h15m  |  📅 7d 95% 😱 ↻4d6h');
+  assert.equal(
+    plain(full, { noBar: ['5h'], ascii: true }),
+    'Opus high  |  ctx ###----- 42% :)\n5h 73% :S @2h15m  |  7d ########## 95% :O @4d6h',
+  );
 });
 
 test('unknown effort level gets the fallback icon', () => {

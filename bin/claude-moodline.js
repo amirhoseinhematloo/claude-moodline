@@ -1,31 +1,39 @@
 #!/usr/bin/env node
 'use strict';
 
-const { render } = require('../src/render.js');
+const { render, BAR_ITEMS } = require('../src/render.js');
+const { gitBranch } = require('../src/git.js');
 const { install, uninstall, settingsPath } = require('../src/settings.js');
 const { version } = require('../package.json');
 
 const HELP = `claude-moodline ${version}
-A Claude Code status line: model, effort, context and 5h/7d usage bars with mood faces.
+A Claude Code status line: model, effort, git branch, context and 5h/7d usage bars with mood faces.
 
 Usage:
-  claude-moodline install [--force] [--ascii] [--no-color]
+  claude-moodline install [--force] [--ascii] [--no-color] [--no-bar[=ITEMS]]
                               Point Claude Code's statusLine at this package
   claude-moodline uninstall [--force]
                               Remove the statusLine entry
-  claude-moodline preview [--ascii] [--no-color]
+  claude-moodline preview [--ascii] [--no-color] [--no-bar[=ITEMS]]
                               Print a sample status line
-  claude-moodline [--ascii] [--no-color] < status.json
+  claude-moodline [--ascii] [--no-color] [--no-bar[=ITEMS]] < status.json
                               Render (this is what Claude Code runs)
 
 Options:
   --ascii      Plain ASCII instead of emoji and block characters
   --no-color   No ANSI colors (also honoured: NO_COLOR env var)
+  --no-bar=ITEMS
+               Hide the progress bar for these items, comma-separated:
+               ${BAR_ITEMS.join(', ')} or all (plain --no-bar means all). The
+               percentage and face still show.
   --force      Replace / remove a status line that isn't claude-moodline
   -h, --help   Show this help
   -v, --version
 
 Env: CLAUDE_MOODLINE_ASCII=1 is the same as --ascii.
+     CLAUDE_MOODLINE_NO_BAR=ITEMS is the same as --no-bar=ITEMS.
+     COLUMNS sets the width to fit (Claude Code sets it); segments that
+     don't fit wrap onto extra lines.
 Settings file: ${settingsPath()}
 `;
 
@@ -33,12 +41,35 @@ const argv = process.argv.slice(2);
 const has = (...flags) => flags.some((f) => argv.includes(f));
 const command = argv.find((a) => !a.startsWith('-'));
 
+/** Items from --no-bar[=a,b] (last one wins) or CLAUDE_MOODLINE_NO_BAR. */
+function parseNoBar() {
+  const flag = argv.filter((a) => a === '--no-bar' || a.startsWith('--no-bar=')).pop();
+  const raw = flag ? (flag.includes('=') ? flag.slice(flag.indexOf('=') + 1) : 'all') : process.env.CLAUDE_MOODLINE_NO_BAR || '';
+  const items = raw.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+  if (items.includes('all')) return { noBar: BAR_ITEMS, unknown: [] };
+  return {
+    noBar: BAR_ITEMS.filter((i) => items.includes(i)),
+    unknown: items.filter((i) => !BAR_ITEMS.includes(i)),
+  };
+}
+const { noBar, unknown: unknownBars } = parseNoBar();
+
+// Claude Code captures our stdout, so it passes the terminal size in COLUMNS.
+// Leave a little slack: terminals disagree on how wide some emoji are.
+const columns = Number(process.env.COLUMNS) || process.stdout.columns || 0;
+
 const renderOpts = {
   ascii: has('--ascii') || process.env.CLAUDE_MOODLINE_ASCII === '1',
   color: !has('--no-color') && !('NO_COLOR' in process.env),
+  width: columns > 0 ? columns - 2 : 0,
+  noBar,
 };
 // Flags to bake into the installed command, so the choice sticks.
-const styleFlags = [renderOpts.ascii && '--ascii', has('--no-color') && '--no-color'].filter(Boolean);
+const styleFlags = [
+  renderOpts.ascii && '--ascii',
+  has('--no-color') && '--no-color',
+  noBar.length && `--no-bar=${noBar.join(',')}`,
+].filter(Boolean);
 
 function fail(err) {
   process.stderr.write(`claude-moodline: ${err.message}\n`);
@@ -71,6 +102,10 @@ function readStdin() {
 async function main() {
   if (has('-h', '--help')) return void process.stdout.write(HELP);
   if (has('-v', '--version')) return void process.stdout.write(version + '\n');
+  // Reject typos up front, but never blank the live status line over one.
+  if (unknownBars.length && command) {
+    fail(new Error(`unknown --no-bar item "${unknownBars.join(',')}". Use ${BAR_ITEMS.join(', ')} or all.`));
+  }
 
   switch (command) {
     case 'install': {
@@ -96,7 +131,7 @@ async function main() {
       return;
     }
     case 'preview':
-      process.stdout.write(render(sample(), renderOpts) + '\n');
+      process.stdout.write(render(sample(), { ...renderOpts, branch: 'main' }) + '\n');
       return;
     case undefined:
       break;
@@ -113,7 +148,8 @@ async function main() {
   } catch {
     // Render with defaults rather than leave the status line blank.
   }
-  process.stdout.write(render(data, renderOpts));
+  const dir = data?.workspace?.current_dir || data?.cwd || process.cwd();
+  process.stdout.write(render(data, { ...renderOpts, branch: gitBranch(dir) }));
 }
 
 main();

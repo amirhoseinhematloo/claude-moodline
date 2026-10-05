@@ -1,16 +1,26 @@
 # claude-moodline
 
-A status line for [Claude Code](https://claude.com/claude-code) that shows the model, reasoning effort,
-context usage and your 5-hour / 7-day subscription usage — each as a colored bar with a mood face
+A status line for [Claude Code](https://claude.com/claude-code) that shows the model, reasoning effort, git
+branch, context usage and your 5-hour / 7-day subscription usage — each as a colored bar with a mood face
 that gets more worried as it fills up.
 
 ```
-🤖 Opus 🏃 high  |  🧠 ctx ███░░░░░ 42% 🙂
+🤖 Opus 🏃 high  |  🌿 main  |  🧠 ctx ███░░░░░ 42% 🙂
 ⏱️ 5h ███████░░░ 73% 😅 ↻2h15m  |  📅 7d ██░░░░░░░░ 18% 😄 ↻4d6h
 ```
 
 Bars are green below 70%, yellow from 70% and red from 90%. `↻` is the time until that limit resets.
 Faces: 😄 under 40% · 🙂 under 70% · 😅 under 90% · 😱 at 90%+.
+`🌿` is the current git branch (or short commit hash when detached); it's hidden outside a git repo.
+
+When the terminal is too narrow, segments that don't fit move onto their own lines:
+
+```
+🤖 Opus 🏃 high  |  🌿 main
+🧠 ctx ███░░░░░ 42% 🙂
+⏱️ 5h ███████░░░ 73% 😅 ↻2h15m
+📅 7d ██░░░░░░░░ 18% 😄 ↻4d6h
+```
 
 Works on Windows, macOS and Linux. No dependencies; needs Node.js 18+.
 
@@ -50,20 +60,28 @@ Add this to `~/.claude/settings.json`:
 |---|---|
 | `--ascii` or `CLAUDE_MOODLINE_ASCII=1` | Plain ASCII — no emoji or block characters. Use this if your terminal shows boxes or misaligned glyphs (e.g. the old Windows console host). |
 | `--no-color` or `NO_COLOR` | No ANSI colors. |
+| `--no-bar=ITEMS` or `CLAUDE_MOODLINE_NO_BAR=ITEMS` | Hide the progress bar for some items — a comma-separated list of `ctx`, `5h`, `7d`, or `all` (plain `--no-bar` means all). The percentage, face and reset time still show. |
 
 Flags passed to `install` are saved into the command, e.g. `claude-moodline install --ascii`.
 
+With `--no-bar=5h,7d`:
+
 ```
-Opus high  |  ctx ###----- 42% :)
+🤖 Opus 🏃 high  |  🌿 main  |  🧠 ctx ███░░░░░ 42% 🙂
+⏱️ 5h 73% 😅 ↻2h15m  |  📅 7d 18% 😄 ↻4d6h
+```
+
+```
+Opus high  |  main  |  ctx ###----- 42% :)
 5h #######--- 73% :S @2h15m  |  7d ##-------- 18% :D @4d6h
 ```
 
 ## Commands
 
 ```
-claude-moodline install [--force] [--ascii] [--no-color]
+claude-moodline install [--force] [--ascii] [--no-color] [--no-bar[=ITEMS]]
 claude-moodline uninstall [--force]
-claude-moodline preview [--ascii] [--no-color]
+claude-moodline preview [--ascii] [--no-color] [--no-bar[=ITEMS]]
 claude-moodline --help | --version
 ```
 
