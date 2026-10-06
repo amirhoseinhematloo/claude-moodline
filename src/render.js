@@ -3,10 +3,13 @@
 // Renders the status line from the JSON Claude Code pipes to a statusLine
 // command: model · effort · git branch · context bar on line one, 5h/7d
 // usage bars on line two, each bar with a mood face. On a narrow terminal,
-// segments that don't fit wrap onto extra lines. Pure — no I/O — so it is
-// testable.
+// segments that don't fit wrap onto extra lines. Themes set the look: mood
+// (emoji and faces, the default), minimal (thin lines, no emoji), space,
+// nature, jurassic and game. Pure — no I/O — so it is testable.
 
 const ANSI = {
+  none: '',
+  bold: '\x1b[1m',
   dim: '\x1b[2m',
   cyan: '\x1b[36m',
   magenta: '\x1b[35m',
@@ -14,6 +17,9 @@ const ANSI = {
   green: '\x1b[32m',
   yellow: '\x1b[33m',
   red: '\x1b[31m',
+  brightBlue: '\x1b[94m',
+  brightMagenta: '\x1b[95m',
+  brightCyan: '\x1b[96m',
   reset: '\x1b[0m',
 };
 const NO_ANSI = Object.fromEntries(Object.keys(ANSI).map((k) => [k, '']));
@@ -31,6 +37,7 @@ const EMOJI = {
   filled: '█',
   empty: '░',
   reset: '↻',
+  sep: '|',
 };
 
 // For terminals that render emoji or block glyphs badly (e.g. the legacy
@@ -48,7 +55,148 @@ const ASCII = {
   filled: '#',
   empty: '-',
   reset: '@',
+  sep: '|',
 };
+
+// Serious and quiet: no emoji or faces, thin line bars, color only on warnings.
+const MINIMAL = {
+  model: '',
+  branch: '',
+  ctx: '',
+  fiveHour: '',
+  sevenDay: '',
+  waiting: '',
+  effort: {},
+  effortFallback: '·',
+  faces: null,
+  filled: '━',
+  empty: '─',
+  reset: '↻',
+  sep: '│',
+};
+const MINIMAL_ASCII = { ...MINIMAL, effortFallback: '', filled: '=', empty: '-', reset: '@', sep: '|' };
+
+// Moods run from a sparkle to an impact as usage fills up.
+const SPACE = {
+  model: '🚀',
+  branch: '🛰️',
+  ctx: '🪐',
+  fiveHour: '🌍',
+  sevenDay: '🌌',
+  waiting: '🔭',
+  effort: { low: '🌑', medium: '🌓', high: '🌕', xhigh: '🌟', max: '☀️' },
+  effortFallback: '⭐',
+  faces: ['✨', '🌠', '☄️', '💥'],
+  filled: '✦',
+  empty: '·',
+  reset: '↻',
+  sep: '⋆',
+};
+const SPACE_ASCII = { ...ASCII, filled: '*', empty: '.' };
+
+// Effort by animal speed; moods run through the seasons to a wildfire.
+const NATURE = {
+  model: '🌳',
+  branch: '🌿',
+  ctx: '🌻',
+  fiveHour: '☀️',
+  sevenDay: '🌙',
+  waiting: '🌱',
+  effort: { low: '🐌', medium: '🐢', high: '🐇', xhigh: '🦌', max: '🦅' },
+  effortFallback: '🐝',
+  faces: ['🌸', '🍃', '🍂', '🔥'],
+  filled: '▰',
+  empty: '▱',
+  reset: '↻',
+  sep: '·',
+};
+const NATURE_ASCII = { ...ASCII, filled: '+', empty: '.' };
+
+// Effort grows from an egg to a T. rex; at 90% the asteroid arrives.
+const JURASSIC = {
+  model: '🦖',
+  branch: '🌿',
+  ctx: '🦴',
+  fiveHour: '👣',
+  sevenDay: '🪨',
+  waiting: '🥚',
+  effort: { low: '🥚', medium: '🐣', high: '🦎', xhigh: '🦕', max: '🦖' },
+  effortFallback: '🦴',
+  faces: ['🌴', '🌋', '🔥', '☄️'],
+  filled: '▓',
+  empty: '░',
+  reset: '↻',
+  sep: '¦',
+};
+const JURASSIC_ASCII = { ...ASCII, filled: '#', empty: '.' };
+
+// Context is the health bar; effort is the difficulty setting.
+const GAME = {
+  model: '🎮',
+  branch: '🗺️',
+  ctx: '❤️',
+  fiveHour: '⚡',
+  sevenDay: '🛡️',
+  waiting: '🕹️',
+  effort: { low: '🟢', medium: '🟡', high: '🟠', xhigh: '🔴', max: '👾' },
+  effortFallback: '⭐',
+  faces: ['🏆', '🎯', '⚠️', '💀'],
+  filled: '■',
+  empty: '□',
+  reset: '↻',
+  sep: '║',
+};
+const GAME_ASCII = { ...ASCII, filled: '|', empty: '.' };
+
+/**
+ * Each theme: glyphs (and a plain-ASCII fallback), ANSI color names for each
+ * part, bar colors by mood (see moodIndex), and the text shown before usage
+ * data arrives. The first theme is the default.
+ */
+const THEMES = {
+  mood: {
+    glyphs: EMOJI,
+    ascii: ASCII,
+    colors: { model: 'cyan', effort: 'magenta', branch: 'blue', moods: ['green', 'green', 'yellow', 'red'] },
+    waiting: 'usage: waiting for first reply',
+  },
+  minimal: {
+    glyphs: MINIMAL,
+    ascii: MINIMAL_ASCII,
+    colors: { model: 'bold', effort: 'dim', branch: 'none', moods: ['none', 'none', 'yellow', 'red'] },
+    waiting: 'usage: waiting for first reply',
+  },
+  space: {
+    glyphs: SPACE,
+    ascii: SPACE_ASCII,
+    colors: {
+      model: 'brightMagenta',
+      effort: 'brightBlue',
+      branch: 'cyan',
+      moods: ['brightCyan', 'brightCyan', 'yellow', 'red'],
+    },
+    waiting: 'usage: awaiting first transmission',
+  },
+  nature: {
+    glyphs: NATURE,
+    ascii: NATURE_ASCII,
+    colors: { model: 'green', effort: 'yellow', branch: 'green', moods: ['green', 'green', 'yellow', 'red'] },
+    waiting: 'usage: waiting for first reply to sprout',
+  },
+  jurassic: {
+    glyphs: JURASSIC,
+    ascii: JURASSIC_ASCII,
+    colors: { model: 'yellow', effort: 'green', branch: 'green', moods: ['green', 'green', 'yellow', 'red'] },
+    waiting: 'usage: waiting for first reply to hatch',
+  },
+  game: {
+    glyphs: GAME,
+    ascii: GAME_ASCII,
+    colors: { model: 'brightMagenta', effort: 'yellow', branch: 'brightBlue', moods: ['green', 'green', 'yellow', 'red'] },
+    waiting: 'usage: press start, waiting for first reply',
+  },
+};
+const THEME_NAMES = Object.keys(THEMES);
 
 /** Items that have a progress bar, by the label shown next to them. */
 const BAR_ITEMS = ['ctx', '5h', '7d'];
@@ -127,6 +275,8 @@ function wrap(segments, sep, width) {
  * @param {object} data   Parsed status-line JSON from Claude Code (may be {}).
  * @param {object} [opts]
  * @param {boolean} [opts.color=true]  Emit ANSI colors.
+ * @param {string}  [opts.theme='mood'] One of THEME_NAMES; unknown names
+ *                                     fall back to the default.
  * @param {boolean} [opts.ascii=false] Use plain ASCII instead of emoji/blocks.
  * @param {number}  [opts.now]         Current time in ms (for tests).
  * @param {string}  [opts.branch]      Git branch to show, if any.
@@ -139,19 +289,21 @@ function wrap(segments, sep, width) {
 function render(data, opts = {}) {
   const d = data && typeof data === 'object' ? data : {};
   const c = opts.color === false ? NO_ANSI : ANSI;
-  const g = opts.ascii ? ASCII : EMOJI;
+  const theme = THEMES[opts.theme] || THEMES[THEME_NAMES[0]];
+  const g = opts.ascii ? theme.ascii : theme.glyphs;
+  const tc = theme.colors;
   const nowSec = Math.floor((opts.now ?? Date.now()) / 1000);
 
   // Joins an optional icon to a label without leaving a stray space in ASCII mode.
   const icon = (i, rest) => (i ? `${i} ${rest}` : rest);
-  const sep = `  ${c.dim}|${c.reset}  `;
-  const colorFor = (p) => [c.green, c.green, c.yellow, c.red][moodIndex(p)];
+  const sep = `  ${c.dim}${g.sep}${c.reset}  `;
+  const colorFor = (p) => c[tc.moods[moodIndex(p)]];
 
   const noBar = new Set(opts.noBar);
   const bar = (item, pct, width = 10) => {
     const p = clampPct(pct);
     const col = colorFor(p);
-    const stats = `${col}${p}%${c.reset} ${g.faces[moodIndex(p)]}`;
+    const stats = `${col}${p}%${c.reset}` + (g.faces ? ` ${g.faces[moodIndex(p)]}` : '');
     if (noBar.has(item)) return stats;
     const filled = Math.round((p * width) / 100);
     return `${col}${g.filled.repeat(filled)}${c.dim}${g.empty.repeat(width - filled)}${c.reset} ${stats}`;
@@ -165,11 +317,11 @@ function render(data, opts = {}) {
   const line1 = [];
   const model = d.model?.display_name || 'Claude';
   const effort = d.effort?.level;
-  let head = icon(g.model, `${c.cyan}${model}${c.reset}`);
-  if (effort) head += ' ' + icon(g.effort[effort] ?? g.effortFallback, `${c.magenta}${effort}${c.reset}`);
+  let head = icon(g.model, `${c[tc.model]}${model}${c.reset}`);
+  if (effort) head += ' ' + icon(g.effort[effort] ?? g.effortFallback, `${c[tc.effort]}${effort}${c.reset}`);
   line1.push(head);
 
-  if (opts.branch) line1.push(icon(g.branch, `${c.blue}${opts.branch}${c.reset}`));
+  if (opts.branch) line1.push(icon(g.branch, `${c[tc.branch]}${opts.branch}${c.reset}`));
 
   const ctx = d.context_window?.used_percentage;
   if (ctx != null) line1.push(icon(g.ctx, `${c.dim}ctx${c.reset} ${bar('ctx', ctx, 8)}`));
@@ -182,9 +334,9 @@ function render(data, opts = {}) {
   if (rl.seven_day?.used_percentage != null) {
     line2.push(icon(g.sevenDay, `${c.dim}7d${c.reset} ${bar('7d', rl.seven_day.used_percentage)}${until(rl.seven_day.resets_at)}`));
   }
-  if (!line2.length) line2.push(icon(g.waiting, `${c.dim}usage: waiting for first reply${c.reset}`));
+  if (!line2.length) line2.push(icon(g.waiting, `${c.dim}${theme.waiting}${c.reset}`));
 
   return [...wrap(line1, sep, opts.width), ...wrap(line2, sep, opts.width)].join('\n');
 }
 
-module.exports = { render, formatDuration, moodIndex, visibleWidth, BAR_ITEMS };
+module.exports = { render, formatDuration, moodIndex, visibleWidth, BAR_ITEMS, THEME_NAMES };

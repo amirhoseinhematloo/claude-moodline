@@ -10,7 +10,7 @@ const { spawnSync } = require('node:child_process');
 const BIN = path.join(__dirname, '..', 'bin', 'claude-moodline.js');
 
 function run(args, { input, env = {}, cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'moodline-cwd-')) } = {}) {
-  const { NO_COLOR, CLAUDE_MOODLINE_ASCII, COLUMNS, ...base } = process.env;
+  const { NO_COLOR, CLAUDE_MOODLINE_ASCII, CLAUDE_MOODLINE_THEME, COLUMNS, ...base } = process.env;
   return spawnSync(process.execPath, [BIN, ...args], {
     input,
     cwd,
@@ -102,6 +102,41 @@ test('install saves --no-bar into the command', () => {
   assert.equal(inst.status, 0, inst.stderr);
   const s = JSON.parse(fs.readFileSync(path.join(dir, 'settings.json'), 'utf8'));
   assert.match(s.statusLine.command, / --no-bar=5h,7d$/);
+});
+
+test('--theme and CLAUDE_MOODLINE_THEME pick the theme', () => {
+  const flag = run(['--no-color', '--theme=minimal'], { input: '{}' });
+  assert.equal(flag.stdout, 'Claude\nusage: waiting for first reply');
+  const env = run(['--no-color'], { input: '{}', env: { CLAUDE_MOODLINE_THEME: 'Space' } });
+  assert.equal(env.stdout, '🚀 Claude\n🔭 usage: awaiting first transmission');
+});
+
+test('--theme rejects unknown names, except while rendering', () => {
+  const bad = run(['preview', '--theme=nope']);
+  assert.equal(bad.status, 1);
+  assert.match(bad.stderr, /unknown theme "nope"/);
+  const live = run(['--no-color', '--theme=nope'], { input: '{}' });
+  assert.equal(live.status, 0);
+  assert.equal(live.stdout, '🤖 Claude\n😊 usage: waiting for first reply');
+});
+
+test('install saves a non-default theme into the command', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'moodline-cli-'));
+  const env = { CLAUDE_CONFIG_DIR: dir };
+  const read = () => JSON.parse(fs.readFileSync(path.join(dir, 'settings.json'), 'utf8')).statusLine.command;
+  assert.equal(run(['install', '--theme=space'], { env }).status, 0);
+  assert.match(read(), / --theme=space$/);
+  assert.equal(run(['install', '--theme=mood'], { env }).status, 0);
+  assert.doesNotMatch(read(), /--theme/);
+});
+
+test('themes prints a sample of every theme', () => {
+  const r = run(['themes', '--no-color']);
+  assert.equal(r.status, 0);
+  for (const name of ['mood', 'minimal', 'space', 'nature', 'jurassic', 'game']) {
+    assert.match(r.stdout, new RegExp(`^${name}$`, 'm'));
+  }
+  for (const bar of ['━', '✦', '▰', '▓', '■']) assert.ok(r.stdout.includes(bar), bar);
 });
 
 test('unknown commands exit non-zero', () => {

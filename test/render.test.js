@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { render, formatDuration, moodIndex, visibleWidth } = require('../src/render.js');
+const { render, formatDuration, moodIndex, visibleWidth, THEME_NAMES } = require('../src/render.js');
 
 const NOW = 1_700_000_000_000;
 const nowSec = NOW / 1000;
@@ -72,6 +72,59 @@ test('noBar hides the bar per item but keeps percentage, face and reset', () => 
     plain(full, { noBar: ['5h'], ascii: true }),
     'Opus high  |  ctx ###----- 42% :)\n5h 73% :S @2h15m  |  7d ########## 95% :O @4d6h',
   );
+});
+
+test('minimal theme uses thin line bars and no emoji or faces', () => {
+  const out = plain(full, { theme: 'minimal', branch: 'main' });
+  assert.equal(
+    out,
+    'Opus · high  │  main  │  ctx ━━━───── 42%\n5h ━━━━━━━─── 73% ↻2h15m  │  7d ━━━━━━━━━━ 95% ↻4d6h',
+  );
+  assert.equal(plain({}, { theme: 'minimal' }), 'Claude\nusage: waiting for first reply');
+  assert.equal(
+    plain(full, { theme: 'minimal', ascii: true }),
+    'Opus high  |  ctx ===----- 42%\n5h =======--- 73% @2h15m  |  7d ========== 95% @4d6h',
+  );
+  // Quiet below 70%: no color on the bar, only on warnings.
+  assert.match(render(full, { now: NOW, theme: 'minimal' }), /\x1b\[1mOpus\x1b\[0m/);
+  assert.doesNotMatch(render(full, { now: NOW, theme: 'minimal' }), /\x1b\[32m/);
+});
+
+test('space theme uses star bars and cosmic moods', () => {
+  const [line1, line2] = plain(full, { theme: 'space', branch: 'main' }).split('\n');
+  assert.equal(line1, '🚀 Opus 🌕 high  ⋆  🛰️ main  ⋆  🪐 ctx ✦✦✦····· 42% 🌠');
+  assert.equal(line2, '🌍 5h ✦✦✦✦✦✦✦··· 73% ☄️ ↻2h15m  ⋆  🌌 7d ✦✦✦✦✦✦✦✦✦✦ 95% 💥 ↻4d6h');
+  assert.equal(plain({}, { theme: 'space' }), '🚀 Claude\n🔭 usage: awaiting first transmission');
+  assert.doesNotMatch(plain(full, { theme: 'space', ascii: true }), /[^\x20-\x7e\n]/);
+  assert.equal(visibleWidth('🛰️☄️☀️'), 6);
+});
+
+test('nature, jurassic and game themes', () => {
+  assert.equal(
+    plain(full, { theme: 'nature', branch: 'main' }),
+    '🌳 Opus 🐇 high  ·  🌿 main  ·  🌻 ctx ▰▰▰▱▱▱▱▱ 42% 🍃\n☀️ 5h ▰▰▰▰▰▰▰▱▱▱ 73% 🍂 ↻2h15m  ·  🌙 7d ▰▰▰▰▰▰▰▰▰▰ 95% 🔥 ↻4d6h',
+  );
+  assert.equal(
+    plain(full, { theme: 'jurassic', branch: 'main' }),
+    '🦖 Opus 🦎 high  ¦  🌿 main  ¦  🦴 ctx ▓▓▓░░░░░ 42% 🌋\n👣 5h ▓▓▓▓▓▓▓░░░ 73% 🔥 ↻2h15m  ¦  🪨 7d ▓▓▓▓▓▓▓▓▓▓ 95% ☄️ ↻4d6h',
+  );
+  assert.equal(
+    plain(full, { theme: 'game', branch: 'main' }),
+    '🎮 Opus 🟠 high  ║  🗺️ main  ║  ❤️ ctx ■■■□□□□□ 42% 🎯\n⚡ 5h ■■■■■■■□□□ 73% ⚠️ ↻2h15m  ║  🛡️ 7d ■■■■■■■■■■ 95% 💀 ↻4d6h',
+  );
+  assert.equal(plain({}, { theme: 'jurassic' }), '🦖 Claude\n🥚 usage: waiting for first reply to hatch');
+  assert.equal(visibleWidth('☀️❤️⚠️🗺️🛡️🪨'), 12);
+});
+
+test('every theme has a plain-ASCII fallback', () => {
+  for (const theme of THEME_NAMES) {
+    const out = plain({ ...full, effort: { level: 'max' } }, { theme, ascii: true, branch: 'main' });
+    assert.doesNotMatch(out, /[^\x20-\x7e\n]/, theme);
+  }
+});
+
+test('unknown theme falls back to the default', () => {
+  assert.equal(plain(full, { theme: 'nope' }), plain(full));
 });
 
 test('unknown effort level gets the fallback icon', () => {

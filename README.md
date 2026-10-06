@@ -24,6 +24,59 @@ When the terminal is too narrow, segments that don't fit move onto their own lin
 
 Works on Windows, macOS and Linux. No dependencies; needs Node.js 18+.
 
+## Themes
+
+Six looks to pick from. `claude-moodline themes` prints a sample of each.
+
+**mood** (default): emoji, block bars and faces that get more worried as usage fills up.
+
+```
+🤖 Opus 🏃 high  |  🌿 main  |  🧠 ctx ███░░░░░ 42% 🙂
+⏱️ 5h ███████░░░ 73% 😅 ↻2h15m  |  📅 7d ██░░░░░░░░ 18% 😄 ↻4d6h
+```
+
+**minimal**: serious and quiet. No emoji or faces, thin line bars, and color only once usage passes 70%.
+
+```
+Opus · high  │  main  │  ctx ━━━───── 42%
+5h ━━━━━━━─── 73% ↻2h15m  │  7d ━━──────── 18% ↻4d6h
+```
+
+**space**: a rocket, a satellite for the branch, moon phases for effort, star bars, and moods that go
+from ✨ to 🌠 to ☄️ to 💥.
+
+```
+🚀 Opus 🌕 high  ⋆  🛰️ main  ⋆  🪐 ctx ✦✦✦····· 42% 🌠
+🌍 5h ✦✦✦✦✦✦✦··· 73% ☄️ ↻2h15m  ⋆  🌌 7d ✦✦········ 18% ✨ ↻4d6h
+```
+
+**nature**: animals by speed for effort (🐌 low to 🦅 max), and moods that run through the seasons,
+🌸 🍃 🍂, to a 🔥 wildfire.
+
+```
+🌳 Opus 🐇 high  ·  🌿 main  ·  🌻 ctx ▰▰▰▱▱▱▱▱ 42% 🍃
+☀️ 5h ▰▰▰▰▰▰▰▱▱▱ 73% 🍂 ↻2h15m  ·  🌙 7d ▰▰▱▱▱▱▱▱▱▱ 18% 🌸 ↻4d6h
+```
+
+**jurassic**: effort grows from 🥚 to 🦖, bars are rock layers, and moods go from a calm 🌴 jungle
+through 🌋 and 🔥 to the ☄️ asteroid.
+
+```
+🦖 Opus 🦎 high  ¦  🌿 main  ¦  🦴 ctx ▓▓▓░░░░░ 42% 🌋
+👣 5h ▓▓▓▓▓▓▓░░░ 73% 🔥 ↻2h15m  ¦  🪨 7d ▓▓░░░░░░░░ 18% 🌴 ↻4d6h
+```
+
+**game**: context is the ❤️ health bar, effort is the difficulty (🟢 🟡 🟠 🔴 👾), and moods go
+🏆 🎯 ⚠️ 💀.
+
+```
+🎮 Opus 🟠 high  ║  🗺️ main  ║  ❤️ ctx ■■■□□□□□ 42% 🎯
+⚡ 5h ■■■■■■■□□□ 73% ⚠️ ↻2h15m  ║  🛡️ 7d ■■□□□□□□□□ 18% 🏆 ↻4d6h
+```
+
+Choose one when installing: `claude-moodline install --theme=minimal`. All themes support `--ascii`,
+`--no-color` and `--no-bar`.
+
 ## Install
 
 ```sh
@@ -58,11 +111,12 @@ Add this to `~/.claude/settings.json`:
 
 | Flag / env | Effect |
 |---|---|
+| `--theme=NAME` or `CLAUDE_MOODLINE_THEME=NAME` | The look: `mood` (default), `minimal`, `space`, `nature`, `jurassic` or `game`. See [Themes](#themes). |
 | `--ascii` or `CLAUDE_MOODLINE_ASCII=1` | Plain ASCII — no emoji or block characters. Use this if your terminal shows boxes or misaligned glyphs (e.g. the old Windows console host). |
 | `--no-color` or `NO_COLOR` | No ANSI colors. |
 | `--no-bar=ITEMS` or `CLAUDE_MOODLINE_NO_BAR=ITEMS` | Hide the progress bar for some items — a comma-separated list of `ctx`, `5h`, `7d`, or `all` (plain `--no-bar` means all). The percentage, face and reset time still show. |
 
-Flags passed to `install` are saved into the command, e.g. `claude-moodline install --ascii`.
+Flags passed to `install` are saved into the command, e.g. `claude-moodline install --theme=space --ascii`.
 
 With `--no-bar=5h,7d`:
 
@@ -79,9 +133,10 @@ Opus high  |  main  |  ctx ###----- 42% :)
 ## Commands
 
 ```
-claude-moodline install [--force] [--ascii] [--no-color] [--no-bar[=ITEMS]]
+claude-moodline install [--force] [--theme=NAME] [--ascii] [--no-color] [--no-bar[=ITEMS]]
 claude-moodline uninstall [--force]
-claude-moodline preview [--ascii] [--no-color] [--no-bar[=ITEMS]]
+claude-moodline preview [--theme=NAME] [--ascii] [--no-color] [--no-bar[=ITEMS]]
+claude-moodline themes [--ascii] [--no-color] [--no-bar[=ITEMS]]
 claude-moodline --help | --version
 ```
 
