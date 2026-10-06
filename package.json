@@ -1,6 +1,6 @@
 {
   "name": "claude-moodline",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "A Claude Code status line with model, effort, context and 5h/7d usage bars, each with a mood face.",
   "keywords": [
     "claude",
