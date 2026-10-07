@@ -116,6 +116,24 @@ test('nature, jurassic and game themes', () => {
   assert.equal(visibleWidth('☀️❤️⚠️🗺️🛡️🪨'), 12);
 });
 
+test('matrix, one-piece and god-of-war themes', () => {
+  assert.equal(
+    plain(full, { theme: 'matrix', branch: 'main' }),
+    '🕶️ Opus 🔴 high  ┆  🥄 main  ┆  💾 ctx 11100000 42% 📟\n☎️ 5h 1111111000 73% 🐈 ↻2h15m  ┆  🌐 7d 1111111111 95% 🦑 ↻4d6h',
+  );
+  assert.equal(
+    plain(full, { theme: 'one-piece', branch: 'main' }),
+    '👒 Opus ⚔️ high  ≈  🧭 main  ≈  🍖 ctx ●●●○○○○○ 42% 🌊\n⚓ 5h ●●●●●●●○○○ 73% 🌀 ↻2h15m  ≈  🗺️ 7d ●●●●●●●●●● 95% ☠️ ↻4d6h',
+  );
+  assert.equal(
+    plain(full, { theme: 'god-of-war', branch: 'main' }),
+    '🪓 Opus 🛡️ high  ‡  🌳 main  ‡  💢 ctx ▮▮▮▯▯▯▯▯ 42% ❄️\n⏳ 5h ▮▮▮▮▮▮▮▯▯▯ 73% 🔥 ↻2h15m  ‡  🏛️ 7d ▮▮▮▮▮▮▮▮▮▮ 95% 💀 ↻4d6h',
+  );
+  assert.equal(plain({}, { theme: 'god-of-war' }), '🪓 Claude\n🏹 usage: BOY! waiting for first reply');
+  assert.match(render(full, { now: NOW, theme: 'matrix' }), /\x1b\[92mOpus\x1b\[0m/);
+  assert.equal(visibleWidth('🕶️☎️🗺️🏝️⚔️☠️⚖️🏛️❄️⚓⛵⏳'), 24);
+});
+
 test('every theme has a plain-ASCII fallback', () => {
   for (const theme of THEME_NAMES) {
     const out = plain({ ...full, effort: { level: 'max' } }, { theme, ascii: true, branch: 'main' });
