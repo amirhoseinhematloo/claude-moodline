@@ -133,10 +133,10 @@ test('install saves a non-default theme into the command', () => {
 test('themes prints a sample of every theme', () => {
   const r = run(['themes', '--no-color']);
   assert.equal(r.status, 0);
-  for (const name of ['mood', 'minimal', 'space', 'nature', 'jurassic', 'game']) {
+  for (const name of ['mood', 'minimal', 'space', 'nature', 'jurassic', 'game', 'matrix', 'one-piece', 'god-of-war']) {
     assert.match(r.stdout, new RegExp(`^${name}$`, 'm'));
   }
-  for (const bar of ['━', '✦', '▰', '▓', '■']) assert.ok(r.stdout.includes(bar), bar);
+  for (const bar of ['━', '✦', '▰', '▓', '■', '●', '▮']) assert.ok(r.stdout.includes(bar), bar);
 });
 
 test('unknown commands exit non-zero', () => {

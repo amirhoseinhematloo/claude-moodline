@@ -5,7 +5,7 @@
 // usage bars on line two, each bar with a mood face. On a narrow terminal,
 // segments that don't fit wrap onto extra lines. Themes set the look: mood
 // (emoji and faces, the default), minimal (thin lines, no emoji), space,
-// nature, jurassic and game. Pure — no I/O — so it is testable.
+// nature, jurassic, game, matrix, one-piece and god-of-war. Pure — no I/O — so it is testable.
 
 const ANSI = {
   none: '',
@@ -17,6 +17,7 @@ const ANSI = {
   green: '\x1b[32m',
   yellow: '\x1b[33m',
   red: '\x1b[31m',
+  brightGreen: '\x1b[92m',
   brightBlue: '\x1b[94m',
   brightMagenta: '\x1b[95m',
   brightCyan: '\x1b[96m',
@@ -148,6 +149,63 @@ const GAME = {
 };
 const GAME_ASCII = { ...ASCII, filled: '|', empty: '.' };
 
+// Binary rain bars. Effort goes from the blue pill to the One; a 🐈 déjà vu
+// is a glitch, and at 90% the 🦑 Sentinels arrive.
+const MATRIX = {
+  model: '🕶️',
+  branch: '🥄',
+  ctx: '💾',
+  fiveHour: '☎️',
+  sevenDay: '🌐',
+  waiting: '💊',
+  effort: { low: '🔵', medium: '🐇', high: '🔴', xhigh: '🥋', max: '😎' },
+  effortFallback: '💊',
+  faces: ['💚', '📟', '🐈', '🦑'],
+  filled: '1',
+  empty: '0',
+  reset: '↻',
+  sep: '┆',
+};
+const MATRIX_ASCII = { ...ASCII, filled: '1', empty: '0' };
+
+// Luffy's stomach is the context bar; effort grows from a dinghy to the King
+// of the Pirates, and moods go from a grin to the Jolly Roger.
+const ONE_PIECE = {
+  model: '👒',
+  branch: '🧭',
+  ctx: '🍖',
+  fiveHour: '⚓',
+  sevenDay: '🗺️',
+  waiting: '🏝️',
+  effort: { low: '⛵', medium: '🚢', high: '⚔️', xhigh: '👊', max: '👑' },
+  effortFallback: '🍊',
+  faces: ['😁', '🌊', '🌀', '☠️'],
+  filled: '●',
+  empty: '○',
+  reset: '↻',
+  sep: '≈',
+};
+const ONE_PIECE_ASCII = { ...ASCII, filled: 'o', empty: '.' };
+
+// Context is the Spartan Rage meter; effort follows the difficulty levels,
+// from Give Me a Story to Give Me God of War, and moods march to Ragnarök.
+const GOD_OF_WAR = {
+  model: '🪓',
+  branch: '🌳',
+  ctx: '💢',
+  fiveHour: '⏳',
+  sevenDay: '🏛️',
+  waiting: '🏹',
+  effort: { low: '📖', medium: '⚖️', high: '🛡️', xhigh: '⚔️', max: '⚡' },
+  effortFallback: '🪓',
+  faces: ['🌲', '❄️', '🔥', '💀'],
+  filled: '▮',
+  empty: '▯',
+  reset: '↻',
+  sep: '‡',
+};
+const GOD_OF_WAR_ASCII = { ...ASCII, filled: '/', empty: '.' };
+
 /**
  * Each theme: glyphs (and a plain-ASCII fallback), ANSI color names for each
  * part, bar colors by mood (see moodIndex), and the text shown before usage
@@ -194,6 +252,24 @@ const THEMES = {
     ascii: GAME_ASCII,
     colors: { model: 'brightMagenta', effort: 'yellow', branch: 'brightBlue', moods: ['green', 'green', 'yellow', 'red'] },
     waiting: 'usage: press start, waiting for first reply',
+  },
+  matrix: {
+    glyphs: MATRIX,
+    ascii: MATRIX_ASCII,
+    colors: { model: 'brightGreen', effort: 'green', branch: 'green', moods: ['brightGreen', 'brightGreen', 'yellow', 'red'] },
+    waiting: 'usage: follow the white rabbit, waiting for first reply',
+  },
+  'one-piece': {
+    glyphs: ONE_PIECE,
+    ascii: ONE_PIECE_ASCII,
+    colors: { model: 'red', effort: 'yellow', branch: 'brightBlue', moods: ['green', 'green', 'yellow', 'red'] },
+    waiting: 'usage: setting sail, waiting for first reply',
+  },
+  'god-of-war': {
+    glyphs: GOD_OF_WAR,
+    ascii: GOD_OF_WAR_ASCII,
+    colors: { model: 'red', effort: 'brightCyan', branch: 'green', moods: ['green', 'green', 'yellow', 'red'] },
+    waiting: 'usage: BOY! waiting for first reply',
   },
 };
 const THEME_NAMES = Object.keys(THEMES);
